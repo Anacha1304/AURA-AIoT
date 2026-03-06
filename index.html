@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AURA | Monitoreo Inteligente</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="background-glow"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">A</div>
+      <div>
+        <h1>AURA</h1>
+        <p>Asistente Universal de Respuesta y Asistencia</p>
+      </div>
+    </div>
+
+    <div class="top-status">
+      <span class="status-dot" id="connectionDot"></span>
+      <span id="connectionText">Esperando datos...</span>
+    </div>
+  </header>
+
+  <main class="dashboard">
+    <section class="hero-card">
+      <div class="hero-left">
+        <h2>Monitoreo inteligente de detección</h2>
+        <p>
+          Visualiza eventos detectados por AURA, como posibles caídas,
+          movimiento anómalo, actividad reciente y estado general del usuario.
+        </p>
+
+        <div class="hero-badges">
+          <span class="badge">ESP32 conectable</span>
+          <span class="badge">Detección en tiempo real</span>
+          <span class="badge">Alertas inteligentes</span>
+        </div>
+      </div>
+
+      <div class="hero-right">
+        <div class="assistant-circle">
+          <div class="pulse pulse1"></div>
+          <div class="pulse pulse2"></div>
+          <div class="core">AURA</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cards-grid">
+      <article class="info-card">
+        <div class="card-icon">🧠</div>
+        <div>
+          <h3>Estado general</h3>
+          <p id="overallStatus" class="card-value">Sin datos</p>
+        </div>
+      </article>
+
+      <article class="info-card">
+        <div class="card-icon">🚨</div>
+        <div>
+          <h3>Detección de caída</h3>
+          <p id="fallStatus" class="card-value">Sin datos</p>
+        </div>
+      </article>
+
+      <article class="info-card">
+        <div class="card-icon">🏃</div>
+        <div>
+          <h3>Movimiento</h3>
+          <p id="movementStatus" class="card-value">Sin datos</p>
+        </div>
+      </article>
+
+      <article class="info-card">
+        <div class="card-icon">📍</div>
+        <div>
+          <h3>Actividad detectada</h3>
+          <p id="activityStatus" class="card-value">Sin datos</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="main-grid">
+      <div class="panel large-panel">
+        <div class="panel-header">
+          <h3>Resumen del sistema</h3>
+          <span class="live-pill">Actualización automática</span>
+        </div>
+
+        <div class="summary-grid">
+          <div class="mini-box">
+            <span>Modo actual</span>
+            <strong id="currentMode">Sin datos</strong>
+          </div>
+          <div class="mini-box">
+            <span>Nivel de riesgo</span>
+            <strong id="riskLevel">Sin datos</strong>
+          </div>
+          <div class="mini-box">
+            <span>Última alerta</span>
+            <strong id="lastAlert">Sin alertas</strong>
+          </div>
+          <div class="mini-box">
+            <span>Último evento</span>
+            <strong id="lastEvent">Sin eventos</strong>
+          </div>
+        </div>
+
+        <div class="system-message" id="systemMessage">
+          Esperando el primer paquete de datos desde AURA.
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Estado actual</h3>
+        </div>
+
+        <div class="state-box">
+          <div class="state-indicator normal-bg" id="stateIndicator"></div>
+          <div>
+            <h4 id="stateTitle">Sin información</h4>
+            <p id="stateDescription">Aún no se han recibido datos desde la ESP32.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel history-panel">
+      <div class="panel-header">
+        <h3>Actividad reciente</h3>
+      </div>
+
+      <ul id="eventList" class="event-list">
+        <li>
+          <span class="event-time">--:--</span>
+          <span class="event-text">Esperando eventos del sistema</span>
+        </li>
+      </ul>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

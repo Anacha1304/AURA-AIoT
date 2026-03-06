@@ -1,0 +1,11 @@
+{
+  "fallDetected": true,
+  "normalRange": false,
+  "movement": "Movimiento estable",
+  "activity": "Reposo normal",
+  "currentMode": "Monitoreo activo",
+  "riskLevel": "Bajo",
+  "lastAlert": "Sin alertas",
+  "eventMessage": "Sistema de detección activo",
+  "eventTime": "10:23"
+}
