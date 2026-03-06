@@ -9,6 +9,9 @@ const lastAlert = document.getElementById("lastAlert");
 const lastEvent = document.getElementById("lastEvent");
 const systemMessage = document.getElementById("systemMessage");
 
+const fallAlertOverlay = document.getElementById("fallAlertOverlay");
+const closeAlertBtn = document.getElementById("closeAlertBtn");
+
 const stateTitle = document.getElementById("stateTitle");
 const stateDescription = document.getElementById("stateDescription");
 const stateIndicator = document.getElementById("stateIndicator");
@@ -20,7 +23,10 @@ const eventList = document.getElementById("eventList");
 
 let previousData = null;
 
-const DATA_URL = "data.json";
+// CAMBIA ESTA IP por la IP real de tu ESP32
+const ESP32_IP = "http://192.168.1.50";
+const DATA_URL = `${ESP32_IP}/status`;
+
 const REFRESH_INTERVAL = 3000;
 
 function getCurrentTime() {
@@ -31,12 +37,28 @@ function getCurrentTime() {
   });
 }
 
+function showFallAlert() {
+  fallAlertOverlay.classList.remove("hidden");
+}
+
+function hideFallAlert() {
+  fallAlertOverlay.classList.add("hidden");
+}
+
+closeAlertBtn.addEventListener("click", hideFallAlert);
+
 function addEvent(message, time = null) {
+  const firstItem = eventList.querySelector("li .event-text");
+  if (firstItem && firstItem.textContent === "Esperando eventos del sistema") {
+    eventList.innerHTML = "";
+  }
+
   const li = document.createElement("li");
   li.innerHTML = `
     <span class="event-time">${time || getCurrentTime()}</span>
     <span class="event-text">${message}</span>
   `;
+
   eventList.prepend(li);
 
   while (eventList.children.length > 8) {
@@ -69,20 +91,60 @@ function updateStatePanel(mode, title, description) {
   }
 }
 
-function applyData(data) {
-  const fallDetected = Boolean(data.fallDetected);
-  const normalRange = Boolean(data.normalRange);
+function formatMode(mode) {
+  if (mode === "fall") return "Detección de caída";
+  if (mode === "camera") return "Cámara";
+  return mode || "Sin datos";
+}
 
-  movementStatus.textContent = data.movement || "Sin datos";
-  activityStatus.textContent = data.activity || "Sin datos";
-  currentMode.textContent = data.currentMode || "Sin datos";
-  riskLevel.textContent = data.riskLevel || "Sin datos";
-  lastAlert.textContent = data.lastAlert || "Sin alertas";
-  lastEvent.textContent = data.eventMessage || "Sin eventos";
+function evaluateMovement(standingEMA, lyingEMA) {
+  if (lyingEMA > 0.7) return "Usuario en el suelo";
+  if (standingEMA > 0.6) return "Usuario en pie";
+  if (lyingEMA > 0.4) return "Movimiento sospechoso";
+  return "Movimiento estable";
+}
+
+function evaluateActivity(standingEMA, lyingEMA, fallDetected) {
+  if (fallDetected) return "Posible caída detectada";
+  if (lyingEMA > 0.7) return "Postura horizontal";
+  if (standingEMA > 0.6) return "Actividad normal";
+  return "Monitoreando postura";
+}
+
+function evaluateRisk(fallDetected, standingEMA, lyingEMA) {
+  if (fallDetected) return "Alto";
+  if (lyingEMA > 0.45) return "Medio";
+  return "Bajo";
+}
+
+function buildEventMessage(fallDetected, standingEMA, lyingEMA) {
+  if (fallDetected) return "Caída detectada por AURA";
+  if (lyingEMA > 0.7) return "Usuario detectado en posición horizontal";
+  if (standingEMA > 0.6) return "Usuario en condición estable";
+  return "Monitoreo activo del sistema";
+}
+
+function applyData(data) {
+  const fallDetected = Boolean(data.fall_detected);
+  const standingEMA = Number(data.standing_ema || 0);
+  const lyingEMA = Number(data.lying_ema || 0);
+  const mode = data.mode || "Sin datos";
+
+  const movement = evaluateMovement(standingEMA, lyingEMA);
+  const activity = evaluateActivity(standingEMA, lyingEMA, fallDetected);
+  const risk = evaluateRisk(fallDetected, standingEMA, lyingEMA);
+  const eventMessage = buildEventMessage(fallDetected, standingEMA, lyingEMA);
+
+  movementStatus.textContent = movement;
+  activityStatus.textContent = activity;
+  currentMode.textContent = formatMode(mode);
+  riskLevel.textContent = risk;
+  lastEvent.textContent = eventMessage;
 
   if (fallDetected) {
     overallStatus.textContent = "Alerta detectada";
     fallStatus.textContent = "Caída detectada";
+    lastAlert.textContent = "Caída detectada";
 
     setTextStyle(overallStatus, "text-alert");
     setTextStyle(fallStatus, "text-alert");
@@ -97,9 +159,14 @@ function applyData(data) {
       "Emergencia potencial",
       "Se detectó un evento de caída o anomalía que requiere atención inmediata."
     );
-  } else if (!normalRange) {
+
+    showFallAlert();
+  } else if (lyingEMA > 0.45) {
+    hideFallAlert();
+
     overallStatus.textContent = "Fuera de rango";
     fallStatus.textContent = "No detectada";
+    lastAlert.textContent = "Sin alerta activa";
 
     setTextStyle(overallStatus, "text-warning");
     setTextStyle(fallStatus, "text-safe");
@@ -115,8 +182,11 @@ function applyData(data) {
       "El sistema detecta actividad atípica, aunque no se ha identificado una caída."
     );
   } else {
+    hideFallAlert();
+
     overallStatus.textContent = "Todo en rango normal";
     fallStatus.textContent = "No detectada";
+    lastAlert.textContent = "Sin alertas";
 
     setTextStyle(overallStatus, "text-normal");
     setTextStyle(fallStatus, "text-safe");
@@ -133,15 +203,16 @@ function applyData(data) {
     );
   }
 
-  if (data.eventMessage) {
-    const isNewEvent =
-      !previousData ||
-      previousData.eventMessage !== data.eventMessage ||
-      previousData.eventTime !== data.eventTime;
+  const eventTime = getCurrentTime();
 
-    if (isNewEvent) {
-      addEvent(data.eventMessage, data.eventTime || null);
-    }
+  const isNewEvent =
+    !previousData ||
+    previousData.fall_detected !== data.fall_detected ||
+    previousData.standing_ema !== data.standing_ema ||
+    previousData.lying_ema !== data.lying_ema;
+
+  if (isNewEvent) {
+    addEvent(eventMessage, eventTime);
   }
 
   previousData = data;
